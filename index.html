@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buon 2026 a 8bit - Alessandra!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-dark: #0f0f23;
+            --pixel-green: #00ff41;
+            --pixel-cyan: #00ffff;
+            --pixel-magenta: #ff00ff;
+            --pixel-yellow: #ffff00;
+            --pixel-red: #ff0040;
+            --pixel-orange: #ff8c00;
+            --pixel-pink: #ff69b4;
+            --pixel-white: #ffffff;
+            --pixel-gold: #ffd700;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.08), rgba(0,0,0,0.08) 1px, transparent 1px, transparent 2px);
+        }
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .header { text-align: center; padding: 20px; width: 100%; }
+        .title {
+            font-size: clamp(24px, 5vw, 48px);
+            color: var(--pixel-yellow);
+            text-shadow: 4px 4px 0 var(--pixel-red), -2px -2px 0 var(--pixel-magenta);
+            letter-spacing: 4px;
+            animation: title-pulse 1s ease-in-out infinite alternate;
+        }
+        @keyframes title-pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.02); }
+        }
+        .subtitle {
+            font-size: clamp(12px, 2.5vw, 18px);
+            color: var(--pixel-cyan);
+            margin-top: 10px;
+        }
+        .game-screen {
+            width: 100%;
+            max-width: 800px;
+            height: 300px;
+            background: linear-gradient(180deg, #000033 0%, #000066 50%, #003366 100%);
+            border: 8px solid var(--pixel-cyan);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px var(--pixel-cyan);
+        }
+        .stars { position: absolute; width: 100%; height: 60%; top: 0; }
+        .star {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: var(--pixel-white);
+            animation: twinkle 1.5s ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60px;
+            background: repeating-linear-gradient(90deg, #4a2c00 0px, #4a2c00 20px, #5c3a00 20px, #5c3a00 40px);
+            border-top: 8px solid var(--pixel-green);
+        }
+        .platform {
+            position: absolute;
+            height: 20px;
+            background: #8B4513;
+            border-top: 4px solid var(--pixel-green);
+        }
+        .character {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            width: 32px; height: 40px;
+            z-index: 100;
+        }
+        .pixel-char {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: transparent;
+            box-shadow:
+                8px 0 0 var(--pixel-yellow), 12px 0 0 var(--pixel-yellow), 16px 0 0 var(--pixel-yellow),
+                4px 4px 0 var(--pixel-yellow), 8px 4px 0 var(--pixel-yellow), 12px 4px 0 var(--pixel-yellow), 16px 4px 0 var(--pixel-yellow), 20px 4px 0 var(--pixel-yellow),
+                8px 8px 0 #ffcc99, 12px 8px 0 #ffcc99, 16px 8px 0 #ffcc99,
+                4px 12px 0 #ffcc99, 8px 12px 0 #333, 12px 12px 0 #ffcc99, 16px 12px 0 #333, 20px 12px 0 #ffcc99,
+                8px 16px 0 #ffcc99, 12px 16px 0 #ff6666, 16px 16px 0 #ffcc99,
+                4px 20px 0 var(--pixel-magenta), 8px 20px 0 var(--pixel-magenta), 12px 20px 0 var(--pixel-magenta), 16px 20px 0 var(--pixel-magenta), 20px 20px 0 var(--pixel-magenta),
+                4px 24px 0 var(--pixel-magenta), 8px 24px 0 var(--pixel-pink), 12px 24px 0 var(--pixel-pink), 16px 24px 0 var(--pixel-pink), 20px 24px 0 var(--pixel-magenta),
+                4px 28px 0 var(--pixel-magenta), 8px 28px 0 var(--pixel-magenta), 12px 28px 0 var(--pixel-magenta), 16px 28px 0 var(--pixel-magenta), 20px 28px 0 var(--pixel-magenta),
+                8px 32px 0 #ffcc99, 16px 32px 0 #ffcc99, 8px 36px 0 var(--pixel-red), 16px 36px 0 var(--pixel-red);
+        }
+        .character.walking .pixel-char { animation: walk 0.3s steps(2) infinite; }
+        @keyframes walk {
+            50% { box-shadow:
+                8px 0 0 var(--pixel-yellow), 12px 0 0 var(--pixel-yellow), 16px 0 0 var(--pixel-yellow),
+                4px 4px 0 var(--pixel-yellow), 8px 4px 0 var(--pixel-yellow), 12px 4px 0 var(--pixel-yellow), 16px 4px 0 var(--pixel-yellow), 20px 4px 0 var(--pixel-yellow),
+                8px 8px 0 #ffcc99, 12px 8px 0 #ffcc99, 16px 8px 0 #ffcc99,
+                4px 12px 0 #ffcc99, 8px 12px 0 #333, 12px 12px 0 #ffcc99, 16px 12px 0 #333, 20px 12px 0 #ffcc99,
+                8px 16px 0 #ffcc99, 12px 16px 0 #ff6666, 16px 16px 0 #ffcc99,
+                4px 20px 0 var(--pixel-magenta), 8px 20px 0 var(--pixel-magenta), 12px 20px 0 var(--pixel-magenta), 16px 20px 0 var(--pixel-magenta), 20px 20px 0 var(--pixel-magenta),
+                4px 24px 0 var(--pixel-magenta), 8px 24px 0 var(--pixel-pink), 12px 24px 0 var(--pixel-pink), 16px 24px 0 var(--pixel-pink), 20px 24px 0 var(--pixel-magenta),
+                4px 28px 0 var(--pixel-magenta), 8px 28px 0 var(--pixel-magenta), 12px 28px 0 var(--pixel-magenta), 16px 28px 0 var(--pixel-magenta), 20px 28px 0 var(--pixel-magenta),
+                4px 32px 0 #ffcc99, 20px 32px 0 #ffcc99, 4px 36px 0 var(--pixel-red), 20px 36px 0 var(--pixel-red); }
+        }
+        .character.jumping { animation: jump 0.5s ease-out; }
+        @keyframes jump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-60px); } }
+        .coin {
+            position: absolute;
+            width: 16px; height: 16px;
+            background: var(--pixel-yellow);
+            border-radius: 50%;
+            box-shadow: inset -4px -4px 0 var(--pixel-orange), 0 0 10px var(--pixel-yellow);
+            animation: coin-float 1s ease-in-out infinite alternate;
+        }
+        @keyframes coin-float { 0% { transform: translateY(0); } 100% { transform: translateY(-5px); } }
+        .goal-flag {
+            position: absolute;
+            right: 40px; bottom: 60px;
+            width: 8px; height: 80px;
+            background: #888;
+        }
+        .flag-banner {
+            position: absolute;
+            top: 0; left: 8px;
+            width: 40px; height: 30px;
+            background: var(--pixel-red);
+            clip-path: polygon(0 0, 100% 15%, 100% 85%, 0 100%);
+            animation: flag-wave 0.5s ease-in-out infinite alternate;
+        }
+        .flag-banner::after {
+            content: '2026';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            color: white;
+            font-weight: bold;
+        }
+        @keyframes flag-wave { 0% { transform: skewY(0deg); } 100% { transform: skewY(3deg); } }
+        .final-message {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 200;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        .final-message.show { opacity: 1; visibility: visible; }
+        .final-message h2 {
+            font-size: clamp(16px, 3.5vw, 28px);
+            color: var(--pixel-yellow);
+            text-shadow: 3px 3px 0 var(--pixel-red), -2px -2px 0 var(--pixel-magenta), 0 0 20px var(--pixel-yellow);
+            animation: glow 0.5s ease-in-out infinite alternate;
+            white-space: nowrap;
+        }
+        @keyframes glow {
+            0% { text-shadow: 3px 3px 0 var(--pixel-red), -2px -2px 0 var(--pixel-magenta), 0 0 20px var(--pixel-yellow); }
+            100% { text-shadow: 3px 3px 0 var(--pixel-orange), -2px -2px 0 var(--pixel-pink), 0 0 40px var(--pixel-cyan); }
+        }
+        .firework {
+            position: absolute;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes explode { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(20); opacity: 0; } }
+        .terminal-container {
+            width: 100%;
+            max-width: 800px;
+            background: #0a0a0a;
+            border: 4px solid var(--pixel-green);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+        }
+        .terminal-header {
+            background: linear-gradient(90deg, #1a1a1a, #2a2a2a);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid var(--pixel-green);
+        }
+        .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .terminal-dot.red { background: var(--pixel-red); }
+        .terminal-dot.yellow { background: var(--pixel-yellow); }
+        .terminal-dot.green { background: var(--pixel-green); }
+        .terminal-title { color: var(--pixel-green); font-size: 14px; margin-left: auto; }
+        .terminal-body {
+            padding: 16px;
+            min-height: 320px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(7px, 1.4vw, 12px);
+            line-height: 1.3;
+            color: var(--pixel-green);
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .c { color: var(--pixel-cyan); }
+        .y { color: var(--pixel-yellow); }
+        .m { color: var(--pixel-magenta); }
+        .r { color: var(--pixel-red); }
+        .g { color: var(--pixel-green); }
+        .w { color: var(--pixel-white); }
+        .o { color: var(--pixel-orange); }
+        .p { color: var(--pixel-pink); }
+        .gold { color: var(--pixel-gold); }
+        .audio-section { width: 100%; max-width: 800px; text-align: center; padding: 20px; }
+        .play-button {
+            background: linear-gradient(180deg, var(--pixel-magenta) 0%, #aa0066 100%);
+            color: white;
+            border: 4px solid var(--pixel-pink);
+            padding: 16px 32px;
+            font-size: clamp(14px, 2.5vw, 20px);
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 6px 0 #660044, 0 0 20px var(--pixel-magenta);
+            transition: all 0.1s;
+        }
+        .play-button:hover { transform: translateY(2px); box-shadow: 0 4px 0 #660044, 0 0 30px var(--pixel-pink); }
+        .play-button:active { transform: translateY(6px); box-shadow: 0 0 0 #660044; }
+        .play-button.playing {
+            background: linear-gradient(180deg, var(--pixel-green) 0%, #00aa00 100%);
+            border-color: var(--pixel-cyan);
+            box-shadow: 0 6px 0 #004400, 0 0 20px var(--pixel-green);
+        }
+        .audio-status { margin-top: 16px; font-size: 14px; color: var(--pixel-cyan); min-height: 20px; }
+        .audio-error {
+            color: var(--pixel-red);
+            background: rgba(255, 0, 64, 0.2);
+            padding: 10px;
+            border: 2px solid var(--pixel-red);
+            margin-top: 10px;
+            display: none;
+        }
+        .audio-error.show { display: block; }
+        .footer { text-align: center; padding: 20px; color: var(--pixel-cyan); font-size: 12px; opacity: 0.7; }
+        .footer span { color: var(--pixel-red); animation: heart 1s ease-in-out infinite; display: inline-block; }
+        @keyframes heart { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        @media (max-width: 600px) {
+            .game-screen { height: 220px; }
+            .terminal-body { font-size: 5px; min-height: 240px; }
+            .ground { height: 40px; }
+            .character { bottom: 40px; transform: scale(0.8); }
+            .goal-flag { bottom: 40px; right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="game-container">
+        <header class="header">
+            <h1 class="title">★ CAPODANNO 2026 ★</h1>
+            <p class="subtitle">&gt; Loading celebration.exe...</p>
+        </header>
+        <div class="game-screen" id="gameScreen">
+            <div class="stars" id="stars"></div>
+            <div class="platform" style="width: 100px; left: 150px; bottom: 120px;"></div>
+            <div class="platform" style="width: 80px; left: 320px; bottom: 160px;"></div>
+            <div class="platform" style="width: 120px; left: 480px; bottom: 130px;"></div>
+            <div class="coin" style="left: 180px; bottom: 150px;"></div>
+            <div class="coin" style="left: 340px; bottom: 190px;"></div>
+            <div class="coin" style="left: 520px; bottom: 160px;"></div>
+            <div class="coin" style="left: 620px; bottom: 90px;"></div>
+            <div class="goal-flag"><div class="flag-banner"></div></div>
+            <div class="character" id="character">
+                <div class="character-body"><div class="pixel-char"></div></div>
+            </div>
+            <div class="ground"></div>
+            <div class="final-message" id="finalMessage">
+                <h2>🎆 Buon 2026 a 8bit Alessandra! 🎆</h2>
+            </div>
+        </div>
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div>
+                <div class="terminal-dot yellow"></div>
+                <div class="terminal-dot green"></div>
+                <span class="terminal-title">celebration.exe</span>
+            </div>
+            <div class="terminal-body" id="terminalBody"></div>
+        </div>
+        <div class="audio-section">
+            <button class="play-button" id="playButton" onclick="toggleMusic()">▶ PLAY CHIPTUNE</button>
+            <div class="audio-status" id="audioStatus"></div>
+            <div class="audio-error" id="audioError">⚠ ERRORE: Impossibile riprodurre l'audio.</div>
+        </div>
+        <footer class="footer">Made with <span>♥</span> in 8-bit style</footer>
+    </div>
+    <script>
+const asciiFrames = [
+`<span class="c">╔════════════════════════════════════════════════════════════════════════════════════╗</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>           <span class="y">★ ★ ★</span>   <span class="m">H A P P Y   N E W   Y E A R</span>   <span class="y">★ ★ ★</span>                       <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                          <span class="y">        .    *    .        </span>                             <span class="c">║</span>
+<span class="c">║</span>                          <span class="y">      *    *   *    *      </span>                             <span class="c">║</span>
+<span class="c">║</span>                          <span class="y">    .   *       *   .    </span>                               <span class="c">║</span>
+<span class="c">║</span>                          <span class="y">      *    ★    *      </span>                                 <span class="c">║</span>
+<span class="c">║</span>         <span class="g">        *        </span>  <span class="y">   *           *   </span>   <span class="gold">     ___________     </span>         <span class="c">║</span>
+<span class="c">║</span>         <span class="g">       /|\\       </span>  <span class="g">       /\\       </span>   <span class="gold">    |   2026    |    </span>         <span class="c">║</span>
+<span class="c">║</span>         <span class="g">      / | \\      </span>  <span class="g">      /  \\      </span>   <span class="gold">    |           |    </span>         <span class="c">║</span>
+<span class="c">║</span>         <span class="g">     /  |  \\     </span>  <span class="g">     /____\\     </span>   <span class="gold">     \\_________/     </span>         <span class="c">║</span>
+<span class="c">║</span>         <span class="g">    /   |   \\    </span>  <span class="g">    /      \\    </span>   <span class="gold">         | |         </span>         <span class="c">║</span>
+<span class="c">║</span>         <span class="g">   /    |    \\   </span>  <span class="g">   /________\\   </span>   <span class="gold">       [_____]       </span>         <span class="c">║</span>
+<span class="c">║</span>         <span class="o">       [█]       </span>  <span class="o">      [██]      </span>   <span class="gold">     CHAMPAGNE!      </span>         <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                    <span class="p">♥ ♥ ♥   A L E S S A N D R A   ♥ ♥ ♥</span>                          <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">╚════════════════════════════════════════════════════════════════════════════════════╝</span>`,
+
+`<span class="c">╔════════════════════════════════════════════════════════════════════════════════════╗</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>           <span class="m">★ ★ ★</span>   <span class="y">H A P P Y   N E W   Y E A R</span>   <span class="m">★ ★ ★</span>                       <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>              <span class="y">  *  </span>       <span class="m">  *  </span>       <span class="c">  *  </span>       <span class="r">  *  </span>       <span class="g">  *  </span>          <span class="c">║</span>
+<span class="c">║</span>             <span class="y"> \\|/ </span>      <span class="m"> \\|/ </span>      <span class="c"> \\|/ </span>      <span class="r"> \\|/ </span>      <span class="g"> \\|/ </span>          <span class="c">║</span>
+<span class="c">║</span>              <span class="y">-*- </span>       <span class="m">-*- </span>       <span class="c">-*- </span>       <span class="r">-*- </span>       <span class="g">-*- </span>          <span class="c">║</span>
+<span class="c">║</span>             <span class="y"> /|\\ </span>      <span class="m"> /|\\ </span>      <span class="c"> /|\\ </span>      <span class="r"> /|\\ </span>      <span class="g"> /|\\ </span>          <span class="c">║</span>
+<span class="c">║</span>              <span class="y">  *  </span>       <span class="m">  *  </span>       <span class="c">  *  </span>       <span class="r">  *  </span>       <span class="g">  *  </span>          <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                   <span class="w">  ██████╗   ██████╗  ██████╗   ██████╗  </span>                       <span class="c">║</span>
+<span class="c">║</span>                   <span class="w">       ██╗ ██╔═══██╗      ██╗ ██╔════╝  </span>                       <span class="c">║</span>
+<span class="c">║</span>                   <span class="w">  █████╔╝  ██║   ██║ █████╔╝  ███████╗  </span>                       <span class="c">║</span>
+<span class="c">║</span>                   <span class="w">  ██╔═══╝  ██║   ██║ ██╔═══╝  ██╔═══██╗ </span>                       <span class="c">║</span>
+<span class="c">║</span>                   <span class="w">  ███████╗ ╚██████╔╝ ███████╗ ╚██████╔╝ </span>                       <span class="c">║</span>
+<span class="c">║</span>                   <span class="w">  ╚══════╝  ╚═════╝  ╚══════╝  ╚═════╝  </span>                       <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                    <span class="c">★ ★ ★   A L E S S A N D R A   ★ ★ ★</span>                          <span class="c">║</span>
+<span class="c">╚════════════════════════════════════════════════════════════════════════════════════╝</span>`,
+
+`<span class="c">╔════════════════════════════════════════════════════════════════════════════════════╗</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>           <span class="r">★ ★ ★</span>   <span class="c">H A P P Y   N E W   Y E A R</span>   <span class="r">★ ★ ★</span>                       <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                                  <span class="w">  \\o/  </span>                                          <span class="c">║</span>
+<span class="c">║</span>                                  <span class="w">   |   </span>                                          <span class="c">║</span>
+<span class="c">║</span>                                  <span class="w">  / \\  </span>                                          <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>          <span class="g">╔═══════════════════════════════════════════════════════════╗</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">║</span>                                                           <span class="g">║</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">║</span>       <span class="gold">★ ★ ★   B U O N   2 0 2 6   ★ ★ ★</span>              <span class="g">║</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">║</span>                                                           <span class="g">║</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">║</span>              <span class="p">A L E S S A N D R A !</span>                      <span class="g">║</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">║</span>                                                           <span class="g">║</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">║</span>         <span class="y">Che sia pieno di gioia e felicità!</span>              <span class="g">║</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">║</span>                                                           <span class="g">║</span>            <span class="c">║</span>
+<span class="c">║</span>          <span class="g">╚═══════════════════════════════════════════════════════════╝</span>            <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">╚════════════════════════════════════════════════════════════════════════════════════╝</span>`,
+
+`<span class="c">╔════════════════════════════════════════════════════════════════════════════════════╗</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>           <span class="gold">★ ★ ★</span>   <span class="g">H A P P Y   N E W   Y E A R</span>   <span class="gold">★ ★ ★</span>                       <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                  <span class="y">     *         </span>     <span class="m">     *         </span>     <span class="c">     *         </span>      <span class="c">║</span>
+<span class="c">║</span>                  <span class="y">    /|\\        </span>     <span class="m">    /|\\        </span>     <span class="c">    /|\\        </span>      <span class="c">║</span>
+<span class="c">║</span>                  <span class="y">   / | \\       </span>     <span class="m">   / | \\       </span>     <span class="c">   / | \\       </span>      <span class="c">║</span>
+<span class="c">║</span>                  <span class="y">  /  |  \\      </span>     <span class="m">  /  |  \\      </span>     <span class="c">  /  |  \\      </span>      <span class="c">║</span>
+<span class="c">║</span>                  <span class="y"> /   |   \\     </span>     <span class="m"> /   |   \\     </span>     <span class="c"> /   |   \\     </span>      <span class="c">║</span>
+<span class="c">║</span>                  <span class="y">/    |    \\    </span>     <span class="m">/    |    \\    </span>     <span class="c">/    |    \\    </span>      <span class="c">║</span>
+<span class="c">║</span>                  <span class="o">    [██]       </span>     <span class="o">    [██]       </span>     <span class="o">    [██]       </span>      <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                     <span class="g">♪ ♪ ♪   AULD LANG SYNE   ♪ ♪ ♪</span>                              <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                    <span class="p">♥ ♥ ♥   A L E S S A N D R A   ♥ ♥ ♥</span>                          <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">║</span>                          <span class="gold">✦ Felice Anno Nuovo! ✦</span>                                  <span class="c">║</span>
+<span class="c">║</span>                                                                                    <span class="c">║</span>
+<span class="c">╚════════════════════════════════════════════════════════════════════════════════════╝</span>`
+];
+
+let currentFrame = 0;
+let asciiInterval;
+
+function startAscii() {
+    const terminal = document.getElementById('terminalBody');
+    terminal.innerHTML = asciiFrames[0];
+    asciiInterval = setInterval(() => {
+        currentFrame = (currentFrame + 1) % asciiFrames.length;
+        terminal.innerHTML = asciiFrames[currentFrame];
+    }, 1200);
+}
+
+function generateStars() {
+    const container = document.getElementById('stars');
+    for (let i = 0; i < 30; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 2 + 's';
+        container.appendChild(star);
+    }
+}
+
+const character = document.getElementById('character');
+const gameScreen = document.getElementById('gameScreen');
+const finalMessage = document.getElementById('finalMessage');
+let charX = 20, isJumping = false, gameComplete = false;
+const jumpPoints = [130, 300, 460];
+let jumpIndex = 0;
+
+function moveCharacter() {
+    if (gameComplete) return;
+    const goalX = gameScreen.offsetWidth - 100;
+    if (jumpIndex < jumpPoints.length && charX >= jumpPoints[jumpIndex] && !isJumping) {
+        isJumping = true;
+        character.classList.add('jumping');
+        setTimeout(() => { character.classList.remove('jumping'); isJumping = false; }, 500);
+        jumpIndex++;
+    }
+    charX += 2;
+    character.style.left = charX + 'px';
+    character.classList.add('walking');
+    document.querySelectorAll('.coin').forEach(coin => {
+        if (Math.abs(charX - parseInt(coin.style.left)) < 30) {
+            coin.style.transform = 'scale(0)';
+            coin.style.opacity = '0';
+            coin.style.transition = 'all 0.3s';
+        }
+    });
+    if (charX >= goalX) {
+        gameComplete = true;
+        character.classList.remove('walking');
+        for (let i = 0; i < 10; i++) setTimeout(() => {
+            const colors = ['#ff0040', '#00ffff', '#ffff00', '#ff00ff', '#00ff41'];
+            const fw = document.createElement('div');
+            fw.className = 'firework';
+            fw.style.left = Math.random() * 80 + 10 + '%';
+            fw.style.top = Math.random() * 40 + 10 + '%';
+            fw.style.background = colors[Math.floor(Math.random() * colors.length)];
+            gameScreen.appendChild(fw);
+            setTimeout(() => fw.remove(), 1000);
+        }, i * 200);
+        setTimeout(() => finalMessage.classList.add('show'), 500);
+        return;
+    }
+    requestAnimationFrame(moveCharacter);
+}
+
+// CORRECT AULD LANG SYNE - G Major
+let audioContext, isPlaying = false, loopTimeout;
+const melody = [
+    {n:'D4',d:0.5},{n:'G4',d:0.75},{n:'G4',d:0.25},{n:'G4',d:0.5},{n:'B4',d:0.5},
+    {n:'A4',d:0.75},{n:'G4',d:0.25},{n:'A4',d:0.5},{n:'B4',d:0.25},{n:'A4',d:0.25},
+    {n:'G4',d:0.75},{n:'G4',d:0.25},{n:'B4',d:0.5},{n:'D5',d:0.5},
+    {n:'E5',d:1.5},{n:'E5',d:0.5},
+    {n:'D5',d:0.75},{n:'B4',d:0.25},{n:'B4',d:0.5},{n:'G4',d:0.5},
+    {n:'A4',d:0.75},{n:'G4',d:0.25},{n:'A4',d:0.5},{n:'B4',d:0.25},{n:'A4',d:0.25},
+    {n:'G4',d:0.75},{n:'E4',d:0.25},{n:'E4',d:0.5},{n:'D4',d:0.5},
+    {n:'G4',d:1.5},{n:'R',d:0.25},{n:'E5',d:0.25},
+    {n:'D5',d:0.75},{n:'B4',d:0.25},{n:'B4',d:0.5},{n:'G4',d:0.5},
+    {n:'A4',d:0.75},{n:'G4',d:0.25},{n:'A4',d:0.5},{n:'E5',d:0.5},
+    {n:'D5',d:0.75},{n:'B4',d:0.25},{n:'B4',d:0.5},{n:'D5',d:0.5},
+    {n:'E5',d:1.5},{n:'G5',d:0.5},
+    {n:'D5',d:0.75},{n:'B4',d:0.25},{n:'B4',d:0.5},{n:'G4',d:0.5},
+    {n:'A4',d:0.75},{n:'G4',d:0.25},{n:'A4',d:0.5},{n:'B4',d:0.25},{n:'A4',d:0.25},
+    {n:'G4',d:0.75},{n:'E4',d:0.25},{n:'E4',d:0.5},{n:'D4',d:0.5},
+    {n:'G4',d:2.0}
+];
+const freq = {R:0,D4:294,E4:330,G4:392,A4:440,B4:494,D5:587,E5:659,G5:784};
+
+function playNote(f, t, dur) {
+    if (f === 0) return;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = 'square';
+    osc.frequency.value = f;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+    gain.gain.setValueAtTime(0.3, t + dur - 0.1);
+    gain.gain.linearRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+    // Sub oscillator
+    const sub = audioContext.createOscillator();
+    const subGain = audioContext.createGain();
+    sub.type = 'square';
+    sub.frequency.value = f / 2;
+    subGain.gain.setValueAtTime(0, t);
+    subGain.gain.linearRampToValueAtTime(0.12, t + 0.01);
+    subGain.gain.linearRampToValueAtTime(0.001, t + dur);
+    sub.connect(subGain);
+    subGain.connect(audioContext.destination);
+    sub.start(t);
+    sub.stop(t + dur + 0.05);
+}
+
+function playMelody() {
+    if (!audioContext || !isPlaying) return;
+    const bpm = 100;
+    const beat = 60 / bpm;
+    let t = audioContext.currentTime + 0.1;
+    melody.forEach(note => {
+        const f = freq[note.n];
+        const dur = note.d * beat;
+        if (f > 0) playNote(f, t, dur * 0.9);
+        t += dur;
+    });
+    const total = melody.reduce((a, n) => a + n.d, 0) * beat;
+    if (isPlaying) loopTimeout = setTimeout(() => { if (isPlaying) playMelody(); }, (total + 1) * 1000);
+}
+
+function toggleMusic() {
+    const btn = document.getElementById('playButton');
+    const status = document.getElementById('audioStatus');
+    if (!isPlaying) {
+        try {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') audioContext.resume();
+            isPlaying = true;
+            btn.textContent = '⏸ STOP MUSIC';
+            btn.classList.add('playing');
+            status.textContent = '♪ Now playing: Auld Lang Syne (8-bit) ♪';
+            playMelody();
+            document.getElementById('audioError').classList.remove('show');
+        } catch (e) {
+            document.getElementById('audioError').classList.add('show');
+        }
+    } else {
+        isPlaying = false;
+        btn.textContent = '▶ PLAY CHIPTUNE';
+        btn.classList.remove('playing');
+        status.textContent = 'Music paused';
+        if (loopTimeout) clearTimeout(loopTimeout);
+        if (audioContext) { audioContext.close(); audioContext = null; }
+    }
+}
+
+function attemptAutoplay() {
+    const status = document.getElementById('audioStatus');
+    const btn = document.getElementById('playButton');
+    try {
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === 'running') {
+            isPlaying = true;
+            btn.textContent = '⏸ STOP MUSIC';
+            btn.classList.add('playing');
+            status.textContent = '♪ Now playing: Auld Lang Syne (8-bit) ♪';
+            playMelody();
+        } else {
+            status.innerHTML = '👆 <strong>Clicca per avviare la musica!</strong>';
+        }
+    } catch (e) {
+        status.innerHTML = '👆 <strong>Clicca per avviare la musica!</strong>';
+    }
+}
+
+window.addEventListener('load', () => {
+    generateStars();
+    startAscii();
+    setTimeout(moveCharacter, 1500);
+    setTimeout(attemptAutoplay, 500);
+});
+document.addEventListener('click', () => {
+    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+}, { once: true });
+    </script>
+</body>
+</html>
